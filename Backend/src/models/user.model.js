@@ -19,20 +19,25 @@ const UserSchema = new mongoose.Schema(
       required: true,
       trim: true,
       minlength: 6
+    },
+    role: {
+      type: String,
+      enum: ["admin", "editor", "viewer"],
+      default: "viewer"
     }
   },
   { timestamps: true }
 )
 
-UserSchema.pre("save", async function(next){
-  if(!this.isModified("password")) return next();
+UserSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
 
   const hashedPassword = await bcrypt.hash(this.password, 12);
   this.password = hashedPassword;
   next();
 })
 
-UserSchema.methods.isPasswordValid = async function(password) {
+UserSchema.methods.isPasswordValid = async function (password) {
   return await bcrypt.compare(password, this.password);
 }
 

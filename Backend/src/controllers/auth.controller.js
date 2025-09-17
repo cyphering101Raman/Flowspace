@@ -11,22 +11,22 @@ const options = {
 
 const signup = asyncHandler(async (req, res) => {
 
-  const { name, email, password } = req.body;
+  const { name, email, role, password } = req.body;
 
-  if (!name || !email || !password) throw new ApiError(400, "All Fields are required");
+  if (!name || !email || !role || !password) throw new ApiError(400, "All Fields are required");
 
   const existedUser = await User.findOne({ email })
   if (existedUser) throw new ApiError(409, "User already exists");
 
   const user = await User.create({
-    name, email, password
+    name, email, role, password
   })
 
   const createdUser = await User.findById(user._id).select("-password");
 
   if (!createdUser) throw new ApiError(500, "Failed to create user");
 
-  const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE_IN })
+  const token = jwt.sign({ _id: user._id, role: role }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE_IN })
 
   return res.status(201)
     .cookie("token", token, options)
