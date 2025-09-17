@@ -1,14 +1,39 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, NavLink } from 'react-router-dom';
-import { Mail, Lock, User} from 'lucide-react';
+import { Mail, Lock, User } from 'lucide-react';
+
+import axiosInstance from "../utils/axiosInstace.js"
+
+import { useDispatch } from "react-redux";
+import { login } from "../features/authStore.js"
 
 function Signup() {
-  const { register, handleSubmit, formState: { errors }, watch, reset } = useForm();
+  const { register, handleSubmit, formState: { errors }, watch, reset, setError } = useForm();
+  const dispatch = useDispatch();
 
-  const onSubmit = (data) => {
-    console.log('Form submitted:', data);
-    reset();
+  const signupHandler = async (userData) => {
+    console.log(userData);
+    try {
+      const res = await axiosInstance.post("/auth/signup", userData);
+      console.log(res);
+      
+      const user = res.data;
+      console.log(user);
+      dispatch(login(user));
+    } catch (error) {
+      if (error.response && error.response.data?.message) {
+        setError("confirmPassword", {
+          type: "manual",
+          message: error.response.data.message
+        })
+      } else {
+        setError("confirmPassword", {
+          type: "manual",
+          message: "Server error. Try again later."
+        });
+      }
+    }
   };
 
   return (
@@ -26,7 +51,7 @@ function Signup() {
             <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
               Sign Up
             </h2>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={handleSubmit(signupHandler)} className="space-y-4">
               {/* Name Field */}
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">

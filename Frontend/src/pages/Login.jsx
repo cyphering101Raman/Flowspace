@@ -3,12 +3,37 @@ import { useForm } from 'react-hook-form';
 import { Link, NavLink } from 'react-router-dom';
 import { Mail, Lock, Bike } from 'lucide-react';
 
-function Login() {
-  const { register, handleSubmit, formState: { errors }, reset } = useForm();
+import axiosInstance from "../utils/axiosInstace.js"
 
-  const onSubmit = (data) => {
-    console.log('Form submitted:', data);
-    reset();
+import { useDispatch } from "react-redux";
+import { login } from "../features/authStore.js"
+
+const Login = ()=> {
+  const { register, handleSubmit, formState: { errors }, reset, setError } = useForm();
+
+  const dispatch = useDispatch();
+
+  const loginHandler = async (userData) => {
+    console.log(userData);
+    
+    try {
+      const res = await axiosInstance.post("/auth/login", userData);
+      const user = res.data;
+      console.log(user);
+      dispatch(login(user));
+    } catch (error) {
+      if (error.response && error.response.data?.message) {
+        setError("password", {
+          type: "manual",
+          message: error.response.data.message
+        })
+      } else {
+        setError("password", {
+          type: "manual",
+          message: "Server error. Try again later."
+        });
+      }
+    }
   };
 
   return (
@@ -61,7 +86,7 @@ function Login() {
             <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
               Log In
             </h2>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={handleSubmit(loginHandler)} className="space-y-4">
 
               {/* Email Field */}
               <div>
