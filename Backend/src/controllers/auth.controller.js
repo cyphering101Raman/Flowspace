@@ -13,14 +13,23 @@ const signup = asyncHandler(async (req, res) => {
 
   const { name, email, role, password } = req.body;
 
-  if (!name || !email || !role || !password) throw new ApiError(400, "All Fields are required");
+  if (!name || !email || !role) throw new ApiError(400, "All Fields are required");
 
-  const existedUser = await User.findOne({ email })
-  if (existedUser) throw new ApiError(409, "User already exists");
+  const existedUser = await User.findOne({ email });
+  if (existedUser) {
+    const token = jwt.sign({ _id: existedUser._id, role: existedUser.role },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRE_IN }
+    );
 
-  const user = await User.create({
-    name, email, role, password
-  })
+    return res.status(200)
+      .cookie("token", token, options)
+      .json(new ApiResponse(200, existedUser, "User logged in successfully"));
+  }
+
+  let user;
+  if (!password) user = await User.create({name, email, role})
+  else user = await User.create({name, email, role, password})
 
   const createdUser = await User.findById(user._id).select("-password");
 
@@ -37,17 +46,21 @@ const signup = asyncHandler(async (req, res) => {
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body
 
-  if (!email || !password) throw new ApiError(400, "All fields are required");
+  if (!email) throw new ApiError(400, "Email required");
 
   const user = await User.findOne({ email })
   if (!user) throw new ApiError(401, "Invalid credentials");
+
+  if(!user.password) throw new ApiError(400, "This account was created via Social login.");
+
+  if(!password) throw new ApiError(400, "Password is required");
 
   const isPasswordCorrect = await user.isPasswordValid(password);
   if (!isPasswordCorrect) throw new ApiError(401, "Invalid credentials");
 
   const loggedinUser = await User.findById(user._id).select("-password");
 
-  const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE_IN })
+  const token = jwt.sign({ _id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE_IN })
 
   return res.status(200)
     .cookie("token", token, options)

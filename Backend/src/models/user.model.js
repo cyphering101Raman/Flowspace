@@ -16,7 +16,7 @@ const UserSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
       minlength: 6
     },
@@ -30,7 +30,7 @@ const UserSchema = new mongoose.Schema(
 )
 
 UserSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+  if (!this.isModified("password") || !this.password) return next();
 
   const hashedPassword = await bcrypt.hash(this.password, 12);
   this.password = hashedPassword;
