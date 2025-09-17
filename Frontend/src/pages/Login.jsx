@@ -1,6 +1,6 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Github } from 'lucide-react';
 
 import axiosInstance from "../utils/axiosInstace.js"
@@ -13,9 +13,10 @@ import { useAuth0 } from '@auth0/auth0-react';
 const Login = () => {
   const { register, handleSubmit, formState: { errors }, reset, setError } = useForm();
 
-  const { loginWithPopup, getUser, isAuthenticated } = useAuth0();
+  const { loginWithPopup, getUser, getIdTokenClaims, isAuthenticated } = useAuth0();
 
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const loginHandler = async (userData) => {
     console.log(userData);
@@ -40,26 +41,27 @@ const Login = () => {
     }
   };
 
-  const auth0Handler = async () => {
+  const auth0Handler = async (provider) => {
     try {
-      await loginWithPopup({ connection: "google-oauth2" });
+      await loginWithPopup({ connection: provider, prompt: "select_account" })
 
-      const userInfo = await getUser();
+      const claims = await getIdTokenClaims();
+      if (!claims) throw new Error("Failed to get user info");
 
-      if (!userInfo) {
-        console.error("Failed to get user info");
-        return;
-      }
-
-      const res = await axiosInstance.post("/auth/google-signup", {
-        name: userInfo.name,
-        email: userInfo.email,
+      const userData = {
+        name: claims.name,
+        email: claims.email,
         role: "viewer",
-      });
+      };
 
+      const res = await axiosInstance.post("/auth/signup", userData);
       dispatch(login(res.data));
+      console.log("YOu are successfull logedin");
+
+      navigate('/');
+
     } catch (err) {
-      console.error("Google login failed", err);
+      console.error(`${provider} login failed`, err);
     }
   };
 
@@ -178,7 +180,7 @@ const Login = () => {
 
               <button
                 type="button"
-                onClick={auth0Handler}
+                onClick={() => auth0Handler("google-oauth2")}
                 className="w-full flex items-center justify-center gap-2 bg-[#DB4437] border border-[#DB4437] text-white py-3 px-4 rounded-md hover:bg-[#C33D2E] transition font-medium mt-4"
               >
                 <img src="./googleTrasn.png" alt="Google" className="w-5 h-5" />
@@ -187,7 +189,7 @@ const Login = () => {
 
               <button
                 type="button"
-                onClick={auth0Handler}
+                onClick={() => auth0Handler("github")}
                 className="w-full flex items-center justify-center gap-2 bg-[#24292F] border border-[#24292F] text-white py-3 px-4 rounded-md hover:bg-[#3A3F44] transition font-medium mt-4"
               >
                 <Github size={20} />
