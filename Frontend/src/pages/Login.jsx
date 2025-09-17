@@ -1,21 +1,25 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, NavLink } from 'react-router-dom';
-import { Mail, Lock, Bike } from 'lucide-react';
+import { Mail, Lock, Github } from 'lucide-react';
 
 import axiosInstance from "../utils/axiosInstace.js"
 
 import { useDispatch } from "react-redux";
 import { login } from "../features/authStore.js"
 
-const Login = ()=> {
+import { useAuth0 } from '@auth0/auth0-react';
+
+const Login = () => {
   const { register, handleSubmit, formState: { errors }, reset, setError } = useForm();
+
+  const { loginWithPopup, getUser, isAuthenticated } = useAuth0();
 
   const dispatch = useDispatch();
 
   const loginHandler = async (userData) => {
     console.log(userData);
-    
+
     try {
       const res = await axiosInstance.post("/auth/login", userData);
       const user = res.data;
@@ -33,6 +37,29 @@ const Login = ()=> {
           message: "Server error. Try again later."
         });
       }
+    }
+  };
+
+  const auth0Handler = async () => {
+    try {
+      await loginWithPopup({ connection: "google-oauth2" });
+
+      const userInfo = await getUser();
+
+      if (!userInfo) {
+        console.error("Failed to get user info");
+        return;
+      }
+
+      const res = await axiosInstance.post("/auth/google-signup", {
+        name: userInfo.name,
+        email: userInfo.email,
+        role: "viewer",
+      });
+
+      dispatch(login(res.data));
+    } catch (err) {
+      console.error("Google login failed", err);
     }
   };
 
@@ -140,6 +167,31 @@ const Login = ()=> {
                 className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition font-medium"
               >
                 Log In
+              </button>
+
+              {/* Separator */}
+              <div className="flex items-center my-4">
+                <hr className="flex-grow border-gray-300" />
+                <span className="mx-2 text-gray-500 text-sm">OR</span>
+                <hr className="flex-grow border-gray-300" />
+              </div>
+
+              <button
+                type="button"
+                onClick={auth0Handler}
+                className="w-full flex items-center justify-center gap-2 bg-[#DB4437] border border-[#DB4437] text-white py-3 px-4 rounded-md hover:bg-[#C33D2E] transition font-medium mt-4"
+              >
+                <img src="./googleTrasn.png" alt="Google" className="w-5 h-5" />
+                Log in with Google
+              </button>
+
+              <button
+                type="button"
+                onClick={auth0Handler}
+                className="w-full flex items-center justify-center gap-2 bg-[#24292F] border border-[#24292F] text-white py-3 px-4 rounded-md hover:bg-[#3A3F44] transition font-medium mt-4"
+              >
+                <Github size={20} />
+                Log in with GitHub
               </button>
 
               {/* Navigation Links */}

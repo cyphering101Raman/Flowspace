@@ -1,15 +1,20 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, NavLink } from 'react-router-dom';
-import { Mail, Lock, User } from 'lucide-react';
+import { Mail, Lock, User, ShieldUser, Github } from 'lucide-react';
 
 import axiosInstance from "../utils/axiosInstace.js"
 
 import { useDispatch } from "react-redux";
 import { login } from "../features/authStore.js"
 
-function Signup() {
+import { useAuth0 } from '@auth0/auth0-react';
+
+const Signup = () => {
   const { register, handleSubmit, formState: { errors }, watch, reset, setError } = useForm();
+
+  const { loginWithPopup, getUser, isAuthenticated } = useAuth0();
+
   const dispatch = useDispatch();
 
   const signupHandler = async (userData) => {
@@ -17,7 +22,7 @@ function Signup() {
     try {
       const res = await axiosInstance.post("/auth/signup", userData);
       console.log(res);
-      
+
       const user = res.data;
       console.log(user);
       dispatch(login(user));
@@ -33,6 +38,29 @@ function Signup() {
           message: "Server error. Try again later."
         });
       }
+    }
+  };
+
+  const auth0Handler = async () => {
+    try {
+      await loginWithPopup({ connection: "google-oauth2" });
+
+      const userInfo = await getUser();
+
+      if (!userInfo) {
+        console.error("Failed to get user info");
+        return;
+      }
+
+      const res = await axiosInstance.post("/auth/google-signup", {
+        name: userInfo.name,
+        email: userInfo.email,
+        role: "viewer",
+      });
+
+      dispatch(login(res.data));
+    } catch (err) {
+      console.error("Google login failed", err);
     }
   };
 
@@ -98,6 +126,26 @@ function Signup() {
                 )}
               </div>
 
+              {/* Role Field */}
+              <div className="mb-4">
+                <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                  <ShieldUser size={20} className="mr-2" />
+                  Role
+                </label>
+                <select
+                  {...register("role", { required: "Role is required" })}
+                  className="w-full p-2 px-5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  defaultValue="viewer"
+                >
+                  <option value="viewer">Viewer</option>
+                  <option value="editor">Editor</option>
+                  <option value="admin">Admin</option>
+                </select>
+                {errors.role && (
+                  <p className="mt-1 text-sm text-red-600">{errors.role.message}</p>
+                )}
+              </div>
+
               {/* Password Field */}
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
@@ -148,6 +196,31 @@ function Signup() {
                 className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition flex items-center justify-center gap-2 font-medium"
               >
                 Sign Up
+              </button>
+
+              {/* Separator */}
+              <div className="flex items-center my-4">
+                <hr className="flex-grow border-gray-300" />
+                <span className="mx-2 text-gray-500 text-sm">OR</span>
+                <hr className="flex-grow border-gray-300" />
+              </div>
+
+              <button
+                type="button"
+                onClick={auth0Handler}
+                className="w-full flex items-center justify-center gap-2 bg-[#DB4437] border border-[#DB4437] text-white py-3 px-4 rounded-md hover:bg-[#C33D2E] transition font-medium mt-4"
+              >
+                <img src="./googleTrasn.png" alt="Google" className="w-5 h-5" />
+                Sign up with Google
+              </button>
+
+              <button
+                type="button"
+                onClick={auth0Handler}
+                className="w-full flex items-center justify-center gap-2 bg-[#24292F] border border-[#24292F] text-white py-3 px-4 rounded-md hover:bg-[#3A3F44] transition font-medium mt-4"
+              >
+                <Github size={20} />
+                Sign up with GitHub
               </button>
 
               {/* Alternative Sign Up Link */}
