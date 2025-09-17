@@ -1,7 +1,7 @@
 import { Router } from "express";
 
 import { signup, login, logout, checkAuth } from "../controllers/auth.controller.js";
-import protectedRoute from "../middleware/auth.middleware.js";
+import protectedRoute from "../middleware/user.middleware.js";
 
 const route = Router()
 

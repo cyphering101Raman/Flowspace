@@ -11,15 +11,15 @@ const options = {
 
 const signup = asyncHandler(async (req, res) => {
 
-  const { fullName, email, password } = req.body;
+  const { name, email, password } = req.body;
 
-  if (!fullName || !email || !password) throw new ApiError(400, "All Fields are required");
+  if (!name || !email || !password) throw new ApiError(400, "All Fields are required");
 
   const existedUser = await User.findOne({ email })
   if (existedUser) throw new ApiError(409, "User already exists");
 
   const user = await User.create({
-    fullName, email, password
+    name, email, password
   })
 
   const createdUser = await User.findById(user._id).select("-password");
