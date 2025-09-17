@@ -18,8 +18,10 @@ const Signup = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
   const signupHandler = async (userData) => {
     console.log(userData);
+
     try {
       const res = await axiosInstance.post("/auth/signup", userData);
       console.log(res);
@@ -27,6 +29,7 @@ const Signup = () => {
       const user = res.data;
       console.log(user);
       dispatch(login(user));
+      navigate("/");
     } catch (error) {
       if (error.response && error.response.data?.message) {
         setError("confirmPassword", {
@@ -44,7 +47,7 @@ const Signup = () => {
 
   const auth0Handler = async (provider) => {
     try {
-      await loginWithPopup({ connection: provider, prompt: "select_account" })
+      await loginWithPopup({ connection: provider})
 
       const claims = await getIdTokenClaims();
       if (!claims) throw new Error("Failed to get user info");
@@ -56,9 +59,11 @@ const Signup = () => {
       };
 
       const res = await axiosInstance.post("/auth/signup", userData);
-      dispatch(login(res.data));
-      console.log("YOu are successfull signedup");
+      dispatch(login(res.data.data));
+      console.log(res.data.data);
       
+      console.log("You are successfull signed-up");
+
       navigate('/');
 
     } catch (err) {

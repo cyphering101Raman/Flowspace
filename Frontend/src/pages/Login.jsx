@@ -24,14 +24,21 @@ const Login = () => {
     try {
       const res = await axiosInstance.post("/auth/login", userData);
       const user = res.data;
-      console.log(user);
-      dispatch(login(user));
+      console.log("user Data from logn: ", user.data);
+
+      dispatch(login(user.data));
+      navigate("/");
+
     } catch (error) {
       if (error.response && error.response.data?.message) {
-        setError("password", {
-          type: "manual",
-          message: error.response.data.message
-        })
+        const message = error.response.data.message;
+
+        if (message.includes("Email")) {
+          setError("email", { type: "manual", message });
+        }
+        else if (message.includes("Password") || message.includes("Invalid credentials")) {
+          setError("password", { type: "manual", message });
+        }
       } else {
         setError("password", {
           type: "manual",
@@ -43,7 +50,7 @@ const Login = () => {
 
   const auth0Handler = async (provider) => {
     try {
-      await loginWithPopup({ connection: provider, prompt: "select_account" })
+      await loginWithPopup({ connection: provider })
 
       const claims = await getIdTokenClaims();
       if (!claims) throw new Error("Failed to get user info");
@@ -55,8 +62,8 @@ const Login = () => {
       };
 
       const res = await axiosInstance.post("/auth/signup", userData);
-      dispatch(login(res.data));
-      console.log("YOu are successfull logedin");
+      dispatch(login(res.data.data));
+      console.log("You are successfull logged-in");
 
       navigate('/');
 
