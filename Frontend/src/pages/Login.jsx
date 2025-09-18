@@ -112,7 +112,7 @@ const Login = () => {
       {/* Right Section - Login Form */}
       <div className="w-1/2 flex flex-col items-center justify-center p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-600">Excellence Technologies</h1>
+          <h1 className="text-3xl font-bold text-blue-600">Flow Space</h1>
         </div>
         <div className="max-w-md w-full space-y-8">
           <p className="text-center text-gray-600">
