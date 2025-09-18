@@ -7,6 +7,7 @@ import cors from "cors"
 
 import authRoutes from "./routes/auth.routes.js"
 import docRoutes from "./routes/document.routes.js"
+import { checkAuth } from "./controllers/auth.controller.js";
 
 const app = express();
 
@@ -20,7 +21,7 @@ app.use(cors({
 )
 
 app.use("/api/v1/auth", authRoutes)
-app.use("/api/v1/document", docRoutes)
+app.use("/api/v1/document",checkAuth, docRoutes)
 
 // ✅ GLOBAL ERROR HANDLER
 app.use((err, req, res, next) => {
