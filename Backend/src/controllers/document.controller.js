@@ -1,29 +1,36 @@
 import Document from "../models/document.model.js";
+import Folder from "../models/folder.model.js";
+
 import { asyncHandler, ApiResponse, ApiError } from "../utils/index.js"
 
-const getAllDocuments = asyncHandler(async (res, res) => {
-  const documents = await Document.find();
-  return res.status(200).json(new ApiResponse(200, documents, "All Document fetched"));
+const getAllDocuments = asyncHandler(async (req, res) => {
+  const documents = await Document.find().populate("folder", "name");
+  return res.status(200).json(new ApiResponse(200, documents, "All documents fetched"));
 });
 
 const getDocumentById = asyncHandler(async (req, res) => {
-  const doc = await Document.findById(req.params.id);
+  const doc = await Document.findById(req.params.id).populate("folder", "name");
   if (!doc) throw new ApiError(404, "Document not found");
   return res.status(200).json(new ApiResponse(200, doc));
 });
+
 
 const createDocument = asyncHandler(async (req, res) => {
   const { title, folder, content } = req.body;
   if (!title || !folder) throw new ApiError(400, "Title and folder are required");
 
-  const newDoc = await Document.create({ title, folder, content: content || " " });
+  const folderExists = await Folder.findById(folder);
+  if (!folderExists) throw new ApiError(404, "Folder not found");
+
+  const newDoc = await Document.create({ title, folder, content: content || '' });
   return res.status(201).json(new ApiResponse(201, newDoc, "Document created successfully"));
 });
+
 
 const updateDocument = asyncHandler(async (req, res) => {
   const { content } = req.body;
   const updatedDoc = await Document.findByIdAndUpdate(
-    req.param.id,
+    req.params.id,
     { content },
     { new: true }
   );
@@ -38,7 +45,7 @@ const deleteDocument = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, null, "Document deleted successfully"));
 });
 
-export{
+export {
   getAllDocuments,
   getDocumentById,
   createDocument,

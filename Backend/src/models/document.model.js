@@ -6,7 +6,8 @@ const DocumentSchema = new mongoose.Schema({
     required: true,
   },
   folder: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Folder",
     required: true,
   },
   content: {
@@ -15,5 +16,6 @@ const DocumentSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-module.exports = mongoose.model('Document', DocumentSchema);
+const Document = mongoose.model('Document', DocumentSchema);
+
 export default Document;

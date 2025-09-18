@@ -8,7 +8,7 @@ import {
   deleteDocument
 } from '../controllers/document.controller.js';
 
-import protectedRoute from '../middleware/authCheck.js';
+import protectedRoute from '../middleware/user.middleware.js';
 
 
 const route = Router()
