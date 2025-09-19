@@ -7,6 +7,7 @@ import cors from "cors"
 
 import authRoutes from "./routes/auth.routes.js"
 import docRoutes from "./routes/document.routes.js"
+import uploadRoutes from "./routes/upload.routes.js"
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use(cors({
 
 app.use("/api/v1/auth", authRoutes)
 app.use("/api/v1/document", docRoutes)
+app.use("/api/v1/upload", uploadRoutes);
 
 // ✅ GLOBAL ERROR HANDLER
 app.use((err, req, res, next) => {
