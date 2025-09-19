@@ -150,7 +150,7 @@ const Document = () => {
   }, [id])
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar */}
       <aside className="flex-shrink-0 w-64 max-w-full border-r bg-white shadow-lg p-4 overflow-y-auto min-w-[220px]">
         <Link to="/document">
@@ -255,8 +255,8 @@ const Document = () => {
                               navigate(`/document/${file._id}`);
                             }}
                             className={`flex-1 flex items-center gap-2 px-2 py-1 rounded truncate ${selectedDoc?._id === file._id
-                                ? "bg-indigo-100 text-indigo-700 font-medium"
-                                : "hover:bg-gray-100"
+                              ? "bg-indigo-100 text-indigo-700 font-medium"
+                              : "hover:bg-gray-100"
                               }`}
                           >
                             <FileText className="w-4 h-4 text-gray-500" />
@@ -309,14 +309,22 @@ const Document = () => {
             setContent={setDocContent}
           />
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-500">
-            <FileText className="w-16 h-16 mb-4 text-gray-400" />
-            <p className="text-lg">Select a file from the sidebar to begin editing.</p>
+          <div
+            className="flex-1 flex flex-col items-center justify-start pt-20 text-gray-500 bg-cover bg-center bg-no-repeat"
+            style={{
+              backgroundImage: "url('/docImageNew.jpg')",
+            }}
+          >
+            {/* <FileText className="w-16 h-16 mb-4 text-gray-400" /> */}
+            <p className="pt-10 font-bold text-xl text-black">
+              Select a file from the sidebar to begin editing.
+            </p>
           </div>
+
         )}
       </main>
     </div>
-    
+
   );
 
 };
