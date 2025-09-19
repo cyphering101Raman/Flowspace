@@ -1,23 +1,25 @@
 import { Router } from "express";
-
 import {
-  getAllDocuments,
-  getDocumentById,
   createDocument,
+  getRootDocuments,
+  getChildren,
+  getDocumentById,
   updateDocument,
-  deleteDocument
-} from '../controllers/document.controller.js';
+  archiveDocument,
+  addAttachment,
+} from "../controllers/document.controller.js";
 
-import protectedRoute from '../middleware/user.middleware.js';
+import protectedRoute from "../middleware/user.middleware.js";
 
+const router = Router();
+router.use(protectedRoute);
 
-const route = Router()
-route.use(protectedRoute);
+router.post("/", createDocument);
+router.get("/root", getRootDocuments);
+router.get("/:parentId/children", getChildren);
+router.get("/:id", getDocumentById);
+router.put("/:id", updateDocument);
+router.delete("/:id", archiveDocument);
+router.post("/:id/attachments", addAttachment);
 
-route.get('/', getAllDocuments);
-route.get('/:id', getDocumentById);
-route.post('/', createDocument);
-route.put('/:id', updateDocument);
-route.delete('/:id', deleteDocument);
-
-export default route;
+export default router;
