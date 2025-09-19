@@ -1,19 +1,27 @@
-import React from 'react'
+import React from 'react';
 import { Editor } from '@tinymce/tinymce-react';
+import axiosInstance from '../utils/axiosInstace.js';
 
 const EditorConsole = ({ selectedDoc, content, setContent }) => {
-  console.log("doc came n: ", selectedDoc);
-  
+  const saveContent = async (updated) => {
+    try {
+      await axiosInstance.put(`/document/${selectedDoc._id}`, {
+        content: updated,
+      });
+    } catch (err) {
+      console.error("Error saving content", err);
+    }
+  };
+
   return (
     <div className="max-w-3xl w-full mx-auto">
-      {/* Use file name, not whole object */}
       <h1 className="text-3xl font-bold text-gray-900 mb-4">
-        {selectedDoc.name}
+        {selectedDoc.title}
       </h1>
 
       <Editor
         apiKey="8by4dqrsol0dvc9botzrabqhzjv2fysg4wvzvjupsaw6t61y"
-        initialValue={`Start writing your content for ${selectedDoc.name}...`}
+        value={content}
         init={{
           height: 500,
           menubar: true,
@@ -27,9 +35,9 @@ const EditorConsole = ({ selectedDoc, content, setContent }) => {
             'alignleft aligncenter alignright alignjustify | ' +
             'bullist numlist outdent indent | removeformat | help'
         }}
-        onEditorChange={(content) => {
-          console.log('Content updated:', content);
-          setContent(content); // update parent state
+        onEditorChange={(updated) => {
+          setContent(updated);
+          saveContent(updated); // auto-save
         }}
       />
     </div>
