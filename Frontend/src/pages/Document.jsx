@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Folder, FileText, Plus, ChevronDown, ChevronRight } from "lucide-react";
-
+import { Pencil } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { useParams, useNavigate, Link } from "react-router-dom";
@@ -9,31 +9,34 @@ import EditorConsole from "../components/EditorConsole.jsx";
 import axiosInstance from "../utils/axiosInstace.js"
 
 const Document = () => {
-  const [openFolders, setOpenFolders] = useState({});
-  const [selectedDoc, setSelectedDoc] = useState(null);
-  const [docContent, setDocContent] = useState('');
+  const [openFolders, setOpenFolders] = useState({});       // keep track of which folder has opened
 
-  const [documents, setDocuments] = useState([]);
-  const [editingFileId, setEditingFileId] = useState(null);
-  const [newFileName, setNewFileName] = useState("");
+  const [selectedDoc, setSelectedDoc] = useState(null);      // keep track of which doc is selected
+  const [docContent, setDocContent] = useState('');         // keep track of content written in the document
 
-  const [editingFolderId, setEditingFolderId] = useState(null);
-  const [newFolderName, setNewFolderName] = useState("");
+  const [documents, setDocuments] = useState([]);          // ------ keep track of document in the db
+
+  const [editingFileId, setEditingFileId] = useState(null); //--------keep track of which file is editing
+  const [newFileName, setNewFileName] = useState("");      // ---------- set new file name
+
+  const [editingFolderId, setEditingFolderId] = useState(null);   //--------keep track of which folder is editing
+  const [newFolderName, setNewFolderName] = useState("");    // ---------- set new flder name
 
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // ✅ Fetch root folders
+  // ✅ Fetch root folders   --  just fetch the folder only not the files.
   const fetchDocuments = async () => {
     try {
       const res = await axiosInstance.get("/document/root");
+
       setDocuments(res.data.data || []);
     } catch (err) {
       console.error("Error fetching docs", err);
     }
   };
 
-  // ✅ Create new document
+  // ✅ Create new document   -- helps in creating new document folder and file
   const createNewDocument = async (parentId = null) => {
     try {
       const res = await axiosInstance.post("/document", {
@@ -163,9 +166,14 @@ const Document = () => {
           {documents.map((doc) => (
             <li key={doc._id}>
               {/* Folder Header */}
+              {/* Folder Header */}
               <div className="flex items-center justify-between">
                 <div
                   onClick={() => toggleFolder(doc._id)}
+                  onDoubleClick={() => {   // 👈 double click triggers edit
+                    setEditingFolderId(doc._id);
+                    setNewFolderName(doc.title);
+                  }}
                   className="flex items-center gap-2 cursor-pointer select-none flex-1 hover:text-indigo-600"
                 >
                   {editingFolderId === doc._id ? (
@@ -173,6 +181,10 @@ const Document = () => {
                       type="text"
                       value={newFolderName}
                       onChange={(e) => setNewFolderName(e.target.value)}
+                      onKeyDown={(e) => {   // 👈 enter = save, esc = cancel
+                        if (e.key === "Enter") renameFolder(doc._id);
+                        if (e.key === "Escape") setEditingFolderId(null);
+                      }}
                       className="border border-gray-300 rounded px-2 py-0.5 w-full"
                       autoFocus
                     />
@@ -193,12 +205,6 @@ const Document = () => {
                 {editingFolderId === doc._id ? (
                   <div className="flex gap-1">
                     <button
-                      onClick={() => renameFolder(doc._id)}
-                      className="text-green-600 text-sm px-1"
-                    >
-                      Save
-                    </button>
-                    <button
                       onClick={() => setEditingFolderId(null)}
                       className="text-red-600 text-sm px-1"
                     >
@@ -213,10 +219,11 @@ const Document = () => {
                     }}
                     className="text-indigo-600 text-sm hover:underline px-1"
                   >
-                    Edit
+                    <Pencil size={15} />
                   </button>
                 )}
               </div>
+
 
               {/* Folder Children */}
               {openFolders[doc._id] && (
@@ -229,23 +236,19 @@ const Document = () => {
                             type="text"
                             value={newFileName}
                             onChange={(e) => setNewFileName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") renameFile(file._id, doc._id);
+                              if (e.key === "Escape") setEditingFileId(null);
+                            }}
                             className="border border-gray-300 rounded px-2 py-0.5 w-full"
                             autoFocus
                           />
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() => renameFile(file._id, doc._id)}
-                              className="text-green-600 text-sm px-1"
-                            >
-                              Save
-                            </button>
-                            <button
-                              onClick={() => setEditingFileId(null)}
-                              className="text-red-600 text-sm px-1"
-                            >
-                              Cancel
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => setEditingFileId(null)}
+                            className="text-red-600 text-sm px-1"
+                          >
+                            Cancel
+                          </button>
                         </>
                       ) : (
                         <>
@@ -253,6 +256,10 @@ const Document = () => {
                             onClick={() => {
                               setSelectedDoc(file);
                               navigate(`/document/${file._id}`);
+                            }}
+                            onDoubleClick={() => {
+                              setEditingFileId(file._id);
+                              setNewFileName(file.title);
                             }}
                             className={`flex-1 flex items-center gap-2 px-2 py-1 rounded truncate ${selectedDoc?._id === file._id
                               ? "bg-indigo-100 text-indigo-700 font-medium"
@@ -269,7 +276,7 @@ const Document = () => {
                             }}
                             className="text-indigo-600 text-sm hover:underline px-1"
                           >
-                            Edit
+                            <Pencil size={15} />
                           </button>
                         </>
                       )}
