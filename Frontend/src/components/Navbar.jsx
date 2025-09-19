@@ -1,18 +1,23 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { User, LogIn, LogOut, FileText, BarChart2, Home as HomeIcon } from "lucide-react";
 
 import { useDispatch, useSelector } from "react-redux";
-import { logout } from "../features/authStore";
+import { logout }from "../features/authStore";
+import axiosInstance from "../utils/axiosInstace";
 
 const Navbar = () => {
-  const { user } = useSelector((state) => state.auth)
+  const { user, isAuthenticated } = useSelector((state) => state.auth)
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const logouthandler = () => {
+  const logouthandler = async () => {
+    await axiosInstance.post('/auth/logout');
     dispatch(logout());
+    navigate('/');
   };
+
   return (
     <header className="w-full shadow bg-white sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">

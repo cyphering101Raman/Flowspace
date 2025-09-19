@@ -24,7 +24,7 @@ const Login = () => {
     try {
       const res = await axiosInstance.post("/auth/login", userData);
       const user = res.data;
-      console.log("user Data from logn: ", user.data);
+      console.log("user Data from logn: ", user);
 
       dispatch(login(user.data));
       navigate("/");
