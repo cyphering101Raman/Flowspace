@@ -42,11 +42,11 @@ const DocumentSchema = new mongoose.Schema(
     // File / Media attachments
     attachments: [
       {
-        name: String,
-        url: String,    // S3/MinIO signed URL or public URL
-        type: String,
-        size: Number,   // in bytes
-      },
+        name: { type: String },
+        url: { type: String, required: true },
+        type: { type: String },
+        size: { type: Number },
+      }
     ],
   },
   { timestamps: true }
