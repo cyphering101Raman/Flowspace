@@ -25,27 +25,41 @@ const EditorConsole = ({ selectedDoc, content, setContent }) => {
     }
   };
 
-  // ✅ Image upload handler (drag-drop, copy-paste, or toolbar)
+  // ✅ Image upload handler
   const handleImageUpload = async (blobInfo, success, failure) => {
     try {
-      const sigRes = await axiosInstance.post("/upload/signature");
-      const sigData = sigRes.data;
-
+      // 1️⃣ Upload image to Cloudinary via backend
       const formData = new FormData();
-      formData.append("file", blobInfo.blob());
-      formData.append("api_key", sigData.apiKey);
-      formData.append("timestamp", sigData.timestamp);
-      formData.append("signature", sigData.signature);
-      formData.append("folder", sigData.folder);
+      formData.append("image", blobInfo.blob(), blobInfo.filename());
 
-      const uploadRes = await axiosInstance.post(
-        `https://api.cloudinary.com/v1_1/${sigData.cloudName}/image/upload`,
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
+      const cloudRes = await axiosInstance.post("/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      const uploadedUrl = cloudRes.data.url;
+      if (!uploadedUrl) return failure("Upload failed: No URL returned from backend");
+
+      console.log("Cloudinary URL:", uploadedUrl);
+
+      // 2️⃣ Send URL to backend to store as attachment
+      const attachmentData = {
+        name: blobInfo.filename(),
+        url: uploadedUrl,
+        type: blobInfo.blob().type,
+        size: blobInfo.blob().size,
+      };
+
+      console.log("Sending attachment to backend:", attachmentData);
+
+      await axiosInstance.post(`/document/${selectedDoc._id}/attachments`,
+        attachmentData
       );
 
-      success(uploadRes.data.secure_url);
+      // 3️⃣ Send URL to TinyMCE to display image in editor
+      success(uploadedUrl);
+
     } catch (err) {
+      console.error("Image upload error:", err);
       failure("Image upload failed: " + err.message);
     }
   };
@@ -68,17 +82,46 @@ const EditorConsole = ({ selectedDoc, content, setContent }) => {
           height: 500,
           menubar: true,
           plugins: [
-            'advlist autolink lists link image charmap print preview anchor',
-            'searchreplace visualblocks code fullscreen',
-            'insertdatetime table paste code help wordcount'
+            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'print', 'preview', 'anchor',
+            'searchreplace', 'visualblocks', 'code', 'fullscreen', 'insertdatetime', 'table', 'paste',
+            'help', 'wordcount'
           ],
           toolbar:
             'undo redo | formatselect | bold italic backcolor | ' +
-            'alignleft aligncenter alignright alignjustify | ' +
-            'bullist numlist outdent indent | removeformat | help | image',
+            'image | alignleft aligncenter alignright alignjustify | ' +
+            'bullist numlist outdent indent | removeformat | help',
+
           images_upload_handler: handleImageUpload,
-          paste_data_images: true, // allows copy-paste images
           automatic_uploads: true,
+          file_picker_types: 'image',
+
+          // Remove drag/drop and base64 paste handling
+          paste_data_images: false,
+          file_picker_callback: function (callback, value, meta) {
+            if (meta.filetype === 'image') {
+              const input = document.createElement('input');
+              input.setAttribute('type', 'file');
+              input.setAttribute('accept', 'image/*');
+              input.onchange = async function () {
+                const file = this.files[0];
+                const blobInfo = {
+                  filename: () => file.name,
+                  blob: () => file
+                };
+
+                await handleImageUpload(
+                  blobInfo,
+                  (url) => {
+                    callback(url, { alt: file.name }); // insert only the uploaded Cloudinary URL
+                  },
+                  (errMsg = "Image upload failed") => {
+                    alert(errMsg);
+                  }
+                );
+              };
+              input.click();
+            }
+          },
         }}
         onEditorChange={(updated) => {
           setContent(updated);
