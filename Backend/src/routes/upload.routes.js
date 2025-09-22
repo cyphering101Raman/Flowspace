@@ -1,22 +1,32 @@
-import express from "express";
-import cloudinary from "../utils/cloudinary.js"
+import express from 'express';
+import multer from 'multer';
+import cloudinary from '../utils/cloudinary.js';
+import { Readable } from 'stream';
 
-const route = express.Router();
+const router = express.Router();
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
-// Generate signed params for TinyMCE upload
-route.post("/signature", (req, res) => {
-  const timestamp = Math.round(Date.now() / 1000);
-  const paramsToSign = { timestamp, folder: "documents" };
+router.post('/', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
 
-  const signature = cloudinary.v2.utils.api_sign_request(paramsToSign, process.env.CLOUD_API_SECRET);
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: 'uploads' },
+      (error, result) => {
+        if (error) return res.status(500).json({ message: error.message });
+        res.json({ url: result.secure_url });
+      }
+    );
 
-  res.json({
-    signature,
-    timestamp,
-    apiKey: process.env.CLOUD_API_KEY,
-    cloudName: process.env.CLOUD_NAME,
-    folder: "workspace-documents",
-  });
+    const bufferStream = new Readable();
+    bufferStream.push(req.file.buffer);
+    bufferStream.push(null);
+    bufferStream.pipe(stream);
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
-export default route;
+export default router;
