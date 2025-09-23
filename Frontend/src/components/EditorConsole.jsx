@@ -25,10 +25,8 @@ const EditorConsole = ({ selectedDoc, content, setContent }) => {
     }
   };
 
-  // ✅ Image upload handler
-  const handleImageUpload = async (blobInfo, success, failure) => {
+  const handleImageUpload = async (blobInfo) => {
     try {
-      // 1️⃣ Upload image to Cloudinary via backend
       const formData = new FormData();
       formData.append("image", blobInfo.blob(), blobInfo.filename());
 
@@ -36,12 +34,9 @@ const EditorConsole = ({ selectedDoc, content, setContent }) => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      const uploadedUrl = cloudRes.data.url;
-      if (!uploadedUrl) return failure("Upload failed: No URL returned from backend");
+      const uploadedUrl = cloudRes?.data?.url;
+      if (!uploadedUrl) throw new Error("Upload failed: No URL returned from backend");
 
-      console.log("Cloudinary URL:", uploadedUrl);
-
-      // 2️⃣ Send URL to backend to store as attachment
       const attachmentData = {
         name: blobInfo.filename(),
         url: uploadedUrl,
@@ -49,18 +44,13 @@ const EditorConsole = ({ selectedDoc, content, setContent }) => {
         size: blobInfo.blob().size,
       };
 
-      console.log("Sending attachment to backend:", attachmentData);
+      await axiosInstance.post(`/document/${selectedDoc._id}/attachments`, attachmentData);
 
-      await axiosInstance.post(`/document/${selectedDoc._id}/attachments`,
-        attachmentData
-      );
-
-      // 3️⃣ Send URL to TinyMCE to display image in editor
-      success(uploadedUrl);
-
+      // Important: Resolve with { location } for TinyMCE image dialog
+      return { location: uploadedUrl };
     } catch (err) {
       console.error("Image upload error:", err);
-      failure("Image upload failed: " + err.message);
+      throw err;
     }
   };
 
@@ -82,8 +72,8 @@ const EditorConsole = ({ selectedDoc, content, setContent }) => {
           height: 500,
           menubar: true,
           plugins: [
-            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'print', 'preview', 'anchor',
-            'searchreplace', 'visualblocks', 'code', 'fullscreen', 'insertdatetime', 'table', 'paste',
+            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview', 'anchor',
+            'searchreplace', 'visualblocks', 'code', 'fullscreen', 'insertdatetime', 'table',
             'help', 'wordcount'
           ],
           toolbar:
@@ -91,33 +81,35 @@ const EditorConsole = ({ selectedDoc, content, setContent }) => {
             'image | alignleft aligncenter alignright alignjustify | ' +
             'bullist numlist outdent indent | removeformat | help',
 
-          images_upload_handler: handleImageUpload,
+          // Promise-based handler; must resolve with a URL string
+          images_upload_handler: (blobInfo, progress) => handleImageUpload(blobInfo).then(r => r.location || r),
           automatic_uploads: true,
           file_picker_types: 'image',
+          images_file_types: 'jpeg,jpg,png,gif,webp',
+          image_dimensions: true,
+          image_uploadtab: true,
 
-          // Remove drag/drop and base64 paste handling
-          paste_data_images: false,
-          file_picker_callback: function (callback, value, meta) {
+          paste_data_images: true,
+          file_picker_callback: async function (callback, value, meta) {
             if (meta.filetype === 'image') {
               const input = document.createElement('input');
               input.setAttribute('type', 'file');
               input.setAttribute('accept', 'image/*');
+
               input.onchange = async function () {
                 const file = this.files[0];
                 const blobInfo = {
                   filename: () => file.name,
-                  blob: () => file
+                  blob: () => file,
                 };
 
-                await handleImageUpload(
-                  blobInfo,
-                  (url) => {
-                    callback(url, { alt: file.name }); // insert only the uploaded Cloudinary URL
-                  },
-                  (errMsg = "Image upload failed") => {
-                    alert(errMsg);
-                  }
-                );
+                try {
+                  const result = await handleImageUpload(blobInfo);
+                  const url = result?.location || result;
+                  callback(url, { alt: file.name || '' });
+                } catch (e) {
+                  alert(e?.message || 'Image upload failed');
+                }
               };
               input.click();
             }
