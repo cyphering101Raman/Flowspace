@@ -28,7 +28,7 @@ const EditorConsole = ({ selectedDoc, content, setContent }) => {
   const handleImageUpload = async (blobInfo) => {
     try {
       const formData = new FormData();
-      formData.append("image", blobInfo.blob(), blobInfo.filename());
+      formData.append("file", blobInfo.blob(), blobInfo.filename());
 
       const cloudRes = await axiosInstance.post("/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -78,13 +78,13 @@ const EditorConsole = ({ selectedDoc, content, setContent }) => {
           ],
           toolbar:
             'undo redo | formatselect | bold italic backcolor | ' +
-            'image | alignleft aligncenter alignright alignjustify | ' +
+            'image fileupload | alignleft aligncenter alignright alignjustify | ' +
             'bullist numlist outdent indent | removeformat | help',
 
           // Promise-based handler; must resolve with a URL string
           images_upload_handler: (blobInfo, progress) => handleImageUpload(blobInfo).then(r => r.location || r),
           automatic_uploads: true,
-          file_picker_types: 'image',
+          file_picker_types: 'image file',
           images_file_types: 'jpeg,jpg,png,gif,webp',
           image_dimensions: true,
           image_uploadtab: true,
@@ -112,7 +112,74 @@ const EditorConsole = ({ selectedDoc, content, setContent }) => {
                 }
               };
               input.click();
+            } else if (meta.filetype === 'file') {
+              const input = document.createElement('input');
+              input.setAttribute('type', 'file');
+              input.setAttribute('accept', '.pdf,.txt,.doc,.docx,.odt,.ods,.odp,.rtf,.zip,.csv,.xlsx,.xls,.ppt,.pptx');
+
+              input.onchange = async function () {
+                const file = this.files[0];
+                const blobInfo = {
+                  filename: () => file.name,
+                  blob: () => file,
+                };
+
+                try {
+                  const result = await handleImageUpload(blobInfo);
+                  const url = result?.location || result;
+                  const originalName = file.name || 'download';
+                  const originalExt = (originalName.split('.').pop() || '').toLowerCase();
+                  let customName = window.prompt('Download filename (optional):', originalName) || originalName;
+                  if (!customName.toLowerCase().endsWith('.' + originalExt) && originalExt) {
+                    customName = `${customName}.${originalExt}`;
+                  }
+                  const encodedName = encodeURIComponent(customName);
+                  const downloadUrl = url.replace('/upload/', `/upload/fl_attachment:${encodedName}/`);
+                  const linkHtml = `<a href="${url}" target="_blank" rel="noopener">${originalName}</a> (<a href="${downloadUrl}">Download</a>)`;
+                  if (window.tinymce && window.tinymce.activeEditor) {
+                    window.tinymce.activeEditor.insertContent(linkHtml);
+                  } else {
+                    callback(url, { text: originalName });
+                  }
+                } catch (e) {
+                  alert(e?.message || 'File upload failed');
+                }
+              };
+              input.click();
             }
+          },
+          setup: (editor) => {
+            editor.ui.registry.addButton('fileupload', {
+              text: 'Upload file',
+              tooltip: 'Upload and insert file link',
+              onAction: () => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.pdf,.txt,.doc,.docx,.odt,.ods,.odp,.rtf,.zip,.csv,.xlsx,.xls,.ppt,.pptx';
+                input.onchange = async function () {
+                  const file = this.files[0];
+                  if (!file) return;
+                  const blobInfo = { filename: () => file.name, blob: () => file };
+                  try {
+                    const result = await handleImageUpload(blobInfo);
+                    const url = result?.location || result;
+                    const originalName = file.name || 'download';
+                    const originalExt = (originalName.split('.').pop() || '').toLowerCase();
+                    let customName = window.prompt('Download filename (optional):', originalName) || originalName;
+                    if (!customName.toLowerCase().endsWith('.' + originalExt) && originalExt) {
+                      customName = `${customName}.${originalExt}`;
+                    }
+                    const encodedName = encodeURIComponent(customName);
+                    const downloadUrl = url.replace('/upload/', `/upload/fl_attachment:${encodedName}/`);
+                    const linkHtml = `<a href="${url}" target="_blank" rel="noopener">${originalName}</a> (<a href="${downloadUrl}">Download</a>)`;
+                    editor.insertContent(linkHtml);
+                  } catch (e) {
+                    alert(e?.message || 'File upload failed');
+                  }
+                };
+                input.click();
+              }
+            });
           },
         }}
         onEditorChange={(updated) => {
