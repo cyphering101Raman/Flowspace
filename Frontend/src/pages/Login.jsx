@@ -2,6 +2,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Github } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 import axiosInstance from "../utils/axiosInstace.js"
 
@@ -27,6 +28,7 @@ const Login = () => {
       console.log("user Data from logn: ", user);
 
       dispatch(login(user.data));
+      toast.success("Login successful! Welcome back!");
       navigate("/");
 
     } catch (error) {
@@ -35,15 +37,18 @@ const Login = () => {
 
         if (message.includes("Email")) {
           setError("email", { type: "manual", message });
+          toast.error(message);
         }
         else if (message.includes("Password") || message.includes("Invalid credentials")) {
           setError("password", { type: "manual", message });
+          toast.error(message);
         }
       } else {
         setError("password", {
           type: "manual",
           message: "Server error. Try again later."
         });
+        toast.error("Server error. Please try again later.");
       }
     }
   };
@@ -64,11 +69,13 @@ const Login = () => {
       const res = await axiosInstance.post("/auth/signup", userData);
       dispatch(login(res.data.data));
       console.log("You are successfull logged-in");
+      toast.success(`Successfully logged in with ${provider}!`);
 
       navigate('/');
 
     } catch (err) {
       console.error(`${provider} login failed`, err);
+      toast.error(`Failed to login with ${provider}. Please try again.`);
     }
   };
 

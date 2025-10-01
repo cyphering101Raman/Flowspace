@@ -2,7 +2,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, ShieldUser, Github } from 'lucide-react';
-
+import { toast } from 'react-toastify';
 
 import axiosInstance from "../utils/axiosInstace.js"
 
@@ -29,18 +29,21 @@ const Signup = () => {
       const user = res.data;
       console.log(user);
       dispatch(login(user.data));
+      toast.success("Account created successfully! Welcome to Flow Space!");
       navigate("/");
     } catch (error) {
       if (error.response && error.response.data?.message) {
         setError("confirmPassword", {
           type: "manual",
           message: error.response.data.message
-        })
+        });
+        toast.error(error.response.data.message);
       } else {
         setError("confirmPassword", {
           type: "manual",
           message: "Server error. Try again later."
         });
+        toast.error("Server error. Please try again later.");
       }
     }
   };
@@ -63,11 +66,13 @@ const Signup = () => {
       console.log(res.data.data);
       
       console.log("You are successfull signed-up");
+      toast.success(`Successfully signed up with ${provider}! Welcome to Flow Space!`);
 
       navigate('/');
 
     } catch (err) {
       console.error(`${provider} login failed`, err);
+      toast.error(`Failed to sign up with ${provider}. Please try again.`);
     }
   };
 
