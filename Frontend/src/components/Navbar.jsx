@@ -46,7 +46,7 @@ const Navbar = () => {
             <FileText size={18} /> Documents
           </div>
 
-          <NavLink to="/analytics" className="flex items-center gap-1 hover:text-indigo-600">
+          <NavLink to="#" className="flex items-center gap-1 hover:text-indigo-600">
             <BarChart2 size={18} /> Analytics
           </NavLink>
         </nav>
