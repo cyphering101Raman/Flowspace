@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, ShieldUser, Github } from 'lucide-react';
+import { Mail, Lock, User, ShieldUser, Github, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 import axiosInstance from "../utils/axiosInstace.js"
@@ -13,6 +13,8 @@ import { useAuth0 } from '@auth0/auth0-react';
 
 const Signup = () => {
   const { register, handleSubmit, formState: { errors }, watch, reset, setError } = useForm();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAuth0Loading, setIsAuth0Loading] = useState(false);
 
   const { loginWithPopup, user, getIdTokenClaims, isAuthenticated } = useAuth0();
 
@@ -20,14 +22,15 @@ const Signup = () => {
   const navigate = useNavigate();
 
   const signupHandler = async (userData) => {
-    console.log(userData);
+    // console.log(userData);
+    setIsLoading(true);
 
     try {
       const res = await axiosInstance.post("/auth/signup", userData);
-      console.log(res);
+      // console.log(res);
 
       const user = res.data;
-      console.log(user);
+      // console.log(user);
       dispatch(login(user.data));
       toast.success("Account created successfully! Welcome to Flow Space!");
       navigate("/");
@@ -45,10 +48,13 @@ const Signup = () => {
         });
         toast.error("Server error. Please try again later.");
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const auth0Handler = async (provider) => {
+    setIsAuth0Loading(true);
     try {
       await loginWithPopup({ connection: provider})
 
@@ -63,7 +69,7 @@ const Signup = () => {
 
       const res = await axiosInstance.post("/auth/signup", userData);
       dispatch(login(res.data.data));
-      console.log(res.data.data);
+      // console.log(res.data.data);
       
       console.log("You are successfull signed-up");
       toast.success(`Successfully signed up with ${provider}! Welcome to Flow Space!`);
@@ -73,6 +79,8 @@ const Signup = () => {
     } catch (err) {
       console.error(`${provider} login failed`, err);
       toast.error(`Failed to sign up with ${provider}. Please try again.`);
+    } finally {
+      setIsAuth0Loading(false);
     }
   };
 
@@ -207,9 +215,17 @@ const Signup = () => {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition flex items-center justify-center gap-2 font-medium"
+                disabled={isLoading}
+                className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Sign Up
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Creating Account...
+                  </>
+                ) : (
+                  "Sign Up"
+                )}
               </button>
 
               {/* Separator */}
@@ -222,19 +238,29 @@ const Signup = () => {
               <button
                 type="button"
                 onClick={() => auth0Handler("google-oauth2")}
-                className="w-full flex items-center justify-center gap-2 bg-[#DB4437] border border-[#DB4437] text-white py-3 px-4 rounded-md hover:bg-[#C33D2E] transition font-medium mt-4"
+                disabled={isAuth0Loading}
+                className="w-full flex items-center justify-center gap-2 bg-[#DB4437] border border-[#DB4437] text-white py-3 px-4 rounded-md hover:bg-[#C33D2E] transition font-medium mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <img src="./googleTrasn.png" alt="Google" className="w-5 h-5" />
-                Sign up with Google
+                {isAuth0Loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <img src="./googleTrasn.png" alt="Google" className="w-5 h-5" />
+                )}
+                {isAuth0Loading ? "Signing up..." : "Sign up with Google"}
               </button>
 
               <button
                 type="button"
                 onClick={() => auth0Handler("github")}
-                className="w-full flex items-center justify-center gap-2 bg-[#24292F] border border-[#24292F] text-white py-3 px-4 rounded-md hover:bg-[#3A3F44] transition font-medium mt-4"
+                disabled={isAuth0Loading}
+                className="w-full flex items-center justify-center gap-2 bg-[#24292F] border border-[#24292F] text-white py-3 px-4 rounded-md hover:bg-[#3A3F44] transition font-medium mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Github size={20} />
-                Sign up with GitHub
+                {isAuth0Loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Github size={20} />
+                )}
+                {isAuth0Loading ? "Signing up..." : "Sign up with GitHub"}
               </button>
 
               {/* Alternative Sign Up Link */}

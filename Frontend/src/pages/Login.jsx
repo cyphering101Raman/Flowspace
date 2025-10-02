@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Github } from 'lucide-react';
+import { Mail, Lock, Github, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 import axiosInstance from "../utils/axiosInstace.js"
@@ -13,6 +13,8 @@ import { useAuth0 } from '@auth0/auth0-react';
 
 const Login = () => {
   const { register, handleSubmit, formState: { errors }, reset, setError } = useForm();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAuth0Loading, setIsAuth0Loading] = useState(false);
 
   const { loginWithPopup, getUser, getIdTokenClaims, isAuthenticated } = useAuth0();
 
@@ -20,12 +22,13 @@ const Login = () => {
   const navigate = useNavigate();
 
   const loginHandler = async (userData) => {
-    console.log(userData);
+    // console.log(userData);
+    setIsLoading(true);
 
     try {
       const res = await axiosInstance.post("/auth/login", userData);
       const user = res.data;
-      console.log("user Data from logn: ", user);
+      // console.log("user Data from logn: ", user);
 
       dispatch(login(user.data));
       toast.success("Login successful! Welcome back!");
@@ -50,10 +53,13 @@ const Login = () => {
         });
         toast.error("Server error. Please try again later.");
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const auth0Handler = async (provider) => {
+    setIsAuth0Loading(true);
     try {
       await loginWithPopup({ connection: provider })
 
@@ -76,6 +82,8 @@ const Login = () => {
     } catch (err) {
       console.error(`${provider} login failed`, err);
       toast.error(`Failed to login with ${provider}. Please try again.`);
+    } finally {
+      setIsAuth0Loading(false);
     }
   };
 
@@ -180,9 +188,17 @@ const Login = () => {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition font-medium"
+                disabled={isLoading}
+                className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Log In
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Logging In...
+                  </>
+                ) : (
+                  "Log In"
+                )}
               </button>
 
               {/* Separator */}
@@ -195,19 +211,29 @@ const Login = () => {
               <button
                 type="button"
                 onClick={() => auth0Handler("google-oauth2")}
-                className="w-full flex items-center justify-center gap-2 bg-[#DB4437] border border-[#DB4437] text-white py-3 px-4 rounded-md hover:bg-[#C33D2E] transition font-medium mt-4"
+                disabled={isAuth0Loading}
+                className="w-full flex items-center justify-center gap-2 bg-[#DB4437] border border-[#DB4437] text-white py-3 px-4 rounded-md hover:bg-[#C33D2E] transition font-medium mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <img src="./googleTrasn.png" alt="Google" className="w-5 h-5" />
-                Log in with Google
+                {isAuth0Loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <img src="./googleTrasn.png" alt="Google" className="w-5 h-5" />
+                )}
+                {isAuth0Loading ? "Logging in..." : "Log in with Google"}
               </button>
 
               <button
                 type="button"
                 onClick={() => auth0Handler("github")}
-                className="w-full flex items-center justify-center gap-2 bg-[#24292F] border border-[#24292F] text-white py-3 px-4 rounded-md hover:bg-[#3A3F44] transition font-medium mt-4"
+                disabled={isAuth0Loading}
+                className="w-full flex items-center justify-center gap-2 bg-[#24292F] border border-[#24292F] text-white py-3 px-4 rounded-md hover:bg-[#3A3F44] transition font-medium mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Github size={20} />
-                Log in with GitHub
+                {isAuth0Loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Github size={20} />
+                )}
+                {isAuth0Loading ? "Logging in..." : "Log in with GitHub"}
               </button>
 
               {/* Navigation Links */}
