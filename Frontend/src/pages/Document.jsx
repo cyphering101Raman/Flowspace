@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Folder, FileText, Plus, ChevronDown, ChevronRight } from "lucide-react";
 import { Pencil } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-
 import { useParams, useNavigate, Link } from "react-router-dom";
 
 import EditorConsole from "../components/EditorConsole.jsx";
@@ -154,142 +153,132 @@ const Document = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
+
       {/* Sidebar */}
-      <aside className="flex-shrink-0 w-64 max-w-full border-r bg-white shadow-lg p-4 overflow-y-auto min-w-[220px]">
+      <aside className="flex-shrink-0 w-56 border-r bg-white/80 backdrop-blur-xl p-4 overflow-y-auto min-w-[240px]">
+
+        {/* Header */}
         <Link to="/document">
-          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <Folder className="w-5 h-5 text-indigo-600" /> Documents
-          </h2>
+          <div className="mb-4 flex items-center gap-2 px-2">
+            <Folder className="w-5 h-5 text-indigo-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Documents</h2>
+          </div>
         </Link>
 
-        <ul className="space-y-3">
+        {/* Tree */}
+        <ul className="space-y-1">
           {documents.map((doc) => (
             <li key={doc._id}>
-              {/* Folder Header */}
-              {/* Folder Header */}
-              <div className="flex items-center justify-between">
+
+              {/* Folder */}
+              <div className="group flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-gray-100 transition">
+
                 <div
                   onClick={() => toggleFolder(doc._id)}
-                  onDoubleClick={() => {   // 👈 double click triggers edit
+                  onDoubleClick={() => {
                     setEditingFolderId(doc._id);
                     setNewFolderName(doc.title);
                   }}
-                  className="flex items-center gap-2 cursor-pointer select-none flex-1 hover:text-indigo-600"
+                  className="flex items-center gap-2 cursor-pointer flex-1 min-w-0"
                 >
+                  {openFolders[doc._id] ? (
+                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-gray-500" />
+                  )}
+
+                  <Folder className="w-4 h-4 text-gray-500" />
+
                   {editingFolderId === doc._id ? (
                     <input
-                      type="text"
                       value={newFolderName}
                       onChange={(e) => setNewFolderName(e.target.value)}
-                      onKeyDown={(e) => {   // 👈 enter = save, esc = cancel
+                      onKeyDown={(e) => {
                         if (e.key === "Enter") renameFolder(doc._id);
                         if (e.key === "Escape") setEditingFolderId(null);
                       }}
-                      className="border border-gray-300 rounded px-2 py-0.5 w-full"
+                      className="w-full bg-white border border-gray-300 rounded px-2 py-0.5 text-sm"
                       autoFocus
                     />
                   ) : (
-                    <>
-                      {openFolders[doc._id] ? (
-                        <ChevronDown className="w-4 h-4 text-gray-500" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4 text-gray-500" />
-                      )}
-                      <Folder className="w-5 h-5 text-gray-600" />
-                      <span className="font-semibold truncate">{doc.title}</span>
-                    </>
+                    <span className="truncate text-sm font-medium text-gray-800">
+                      {doc.title}
+                    </span>
                   )}
                 </div>
 
-                {/* Folder Edit Buttons */}
-                {editingFolderId === doc._id ? (
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => setEditingFolderId(null)}
-                      className="text-red-600 text-sm px-1"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
+                {/* Folder actions */}
+                {editingFolderId !== doc._id && (
                   <button
                     onClick={() => {
                       setEditingFolderId(doc._id);
                       setNewFolderName(doc.title);
                     }}
-                    className="text-indigo-600 text-sm hover:underline px-1"
+                    className="opacity-0 group-hover:opacity-100 transition text-gray-700 hover:text-indigo-700"
                   >
-                    <Pencil size={15} />
+                    <Pencil size={14} />
                   </button>
                 )}
               </div>
 
-
-              {/* Folder Children */}
+              {/* Files */}
               {openFolders[doc._id] && (
-                <ul className="ml-6 mt-2 space-y-1">
+                <ul className="mt-1 ml-6 space-y-1">
                   {(doc.children || []).map((file) => (
-                    <li key={file._id} className="flex items-center justify-between gap-2">
+                    <li key={file._id} className="group flex items-center justify-between">
+
                       {editingFileId === file._id ? (
-                        <>
-                          <input
-                            type="text"
-                            value={newFileName}
-                            onChange={(e) => setNewFileName(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") renameFile(file._id, doc._id);
-                              if (e.key === "Escape") setEditingFileId(null);
-                            }}
-                            className="border border-gray-300 rounded px-2 py-0.5 w-full"
-                            autoFocus
-                          />
-                          <button
-                            onClick={() => setEditingFileId(null)}
-                            className="text-red-600 text-sm px-1"
-                          >
-                            Cancel
-                          </button>
-                        </>
+                        <input
+                          value={newFileName}
+                          onChange={(e) => setNewFileName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") renameFile(file._id, doc._id);
+                            if (e.key === "Escape") setEditingFileId(null);
+                          }}
+                          className="w-[80%] bg-white border border-gray-300 rounded px-2 py-0.5 text-sm"
+                          autoFocus
+                        />
                       ) : (
-                        <>
-                          <div
-                            onClick={() => {
-                              setSelectedDoc(file);
-                              navigate(`/document/${file._id}`);
-                            }}
-                            onDoubleClick={() => {
-                              setEditingFileId(file._id);
-                              setNewFileName(file.title);
-                            }}
-                            className={`flex-1 flex items-center gap-2 px-2 py-1 rounded truncate ${selectedDoc?._id === file._id
+                        <div
+                          onClick={() => {
+                            setSelectedDoc(file);
+                            navigate(`/document/${file._id}`);
+                          }}
+                          onDoubleClick={() => {
+                            setEditingFileId(file._id);
+                            setNewFileName(file.title);
+                          }}
+                            className={`flex-1 flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer text-sm truncate
+                      ${selectedDoc?._id === file._id
                               ? "bg-indigo-100 text-indigo-700 font-medium"
-                              : "hover:bg-gray-100"
-                              }`}
-                          >
-                            <FileText className="w-4 h-4 text-gray-500" />
-                            {file.title}
-                          </div>
-                          <button
-                            onClick={() => {
-                              setEditingFileId(file._id);
-                              setNewFileName(file.title);
-                            }}
-                            className="text-indigo-600 text-sm hover:underline px-1"
-                          >
-                            <Pencil size={15} />
-                          </button>
-                        </>
+                              : "hover:bg-gray-100 text-gray-700"
+                            }`}
+                        >
+                          <FileText className="w-4 h-4 text-gray-400" />
+                          {file.title}
+                        </div>
                       )}
+
+                      <button
+                        onClick={() => {
+                          setEditingFileId(file._id);
+                          setNewFileName(file.title);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-indigo-600"
+                      >
+                        <Pencil size={13} />
+                      </button>
                     </li>
                   ))}
 
-                  {/* Add New File */}
+                  {/* New File */}
                   <li>
                     <button
                       onClick={() => createNewDocument(doc._id)}
-                      className="flex items-center gap-1 text-indigo-600 text-sm hover:underline mt-1"
+                      className="mt-1 ml-2 flex items-center gap-1 text-sm text-gray-500 hover:text-indigo-600 transition"
                     >
-                      <Plus className="w-3 h-3" /> New File
+                      <Plus className="w-3 h-3" />
+                      New file
                     </button>
                   </li>
                 </ul>
@@ -298,14 +287,16 @@ const Document = () => {
           ))}
         </ul>
 
-        {/* Add New Root Document */}
+        {/* New Root */}
         <button
           onClick={() => createNewDocument(null)}
-          className="mt-6 flex items-center gap-2 text-indigo-600 font-medium hover:underline"
+          className="mt-6 flex items-center gap-2 px-2 text-sm text-gray-600 hover:text-indigo-600 transition"
         >
-          <Plus className="w-4 h-4" /> New Document
+          <Plus className="w-4 h-4" />
+          New document
         </button>
       </aside>
+
 
       {/* Main Content */}
       <main className="flex-1 p-6 min-w-0 flex flex-col overflow-auto">

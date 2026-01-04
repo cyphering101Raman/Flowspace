@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, ShieldUser, Github, Loader2 } from 'lucide-react';
+import { Mail, Lock, User, ShieldUser, Github, Loader2, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 import axiosInstance from "../utils/axiosInstace.js"
@@ -12,310 +12,246 @@ import { login } from "../features/authStore.js"
 import { useAuth0 } from '@auth0/auth0-react';
 
 const Signup = () => {
-  const { register, handleSubmit, formState: { errors }, watch, reset, setError } = useForm();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isAuth0Loading, setIsAuth0Loading] = useState(false);
+    const { register, handleSubmit, formState: { errors }, watch, reset, setError } = useForm();
+    const [isLoading, setIsLoading] = useState(false);
+    const [isAuth0Loading, setIsAuth0Loading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const { loginWithPopup, user, getIdTokenClaims, isAuthenticated } = useAuth0();
+    const { loginWithPopup, user, getIdTokenClaims, isAuthenticated } = useAuth0();
 
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
 
-  const signupHandler = async (userData) => {
-    // console.log(userData);
-    setIsLoading(true);
+    const signupHandler = async (userData) => {
+        // console.log(userData);
+        setIsLoading(true);
 
-    try {
-      const res = await axiosInstance.post("/auth/signup", userData);
-      // console.log(res);
+        try {
+            const res = await axiosInstance.post("/auth/signup", userData);
+            // console.log(res);
 
-      const user = res.data;
-      // console.log(user);
-      dispatch(login(user.data));
-      toast.success("Account created successfully! Welcome to Flow Space!");
-      navigate("/");
-    } catch (error) {
-      if (error.response && error.response.data?.message) {
-        setError("confirmPassword", {
-          type: "manual",
-          message: error.response.data.message
-        });
-        toast.error(error.response.data.message);
-      } else {
-        setError("confirmPassword", {
-          type: "manual",
-          message: "Server error. Try again later."
-        });
-        toast.error("Server error. Please try again later.");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+            const user = res.data;
+            // console.log(user);
+            dispatch(login(user.data));
+            toast.success("Account created successfully! Welcome to Flow Space!");
+            navigate("/");
+        } catch (error) {
+            if (error.response && error.response.data?.message) {
+                setError("confirmPassword", {
+                    type: "manual",
+                    message: error.response.data.message
+                });
+                toast.error(error.response.data.message);
+            } else {
+                setError("confirmPassword", {
+                    type: "manual",
+                    message: "Server error. Try again later."
+                });
+                toast.error("Server error. Please try again later.");
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-  const auth0Handler = async (provider) => {
-    setIsAuth0Loading(true);
-    try {
-      await loginWithPopup({ connection: provider})
+    const auth0Handler = async (provider) => {
+        setIsAuth0Loading(true);
+        try {
+            await loginWithPopup({ connection: provider })
 
-      const claims = await getIdTokenClaims();
-      if (!claims) throw new Error("Failed to get user info");
+            const claims = await getIdTokenClaims();
+            if (!claims) throw new Error("Failed to get user info");
 
-      const userData = {
-        name: claims.name,
-        email: claims.email,
-        role: "viewer",
-      };
+            const userData = {
+                name: claims.name,
+                email: claims.email,
+                role: "viewer",
+            };
 
-      const res = await axiosInstance.post("/auth/signup", userData);
-      dispatch(login(res.data.data));
-      // console.log(res.data.data);
-      
-      console.log("You are successfull signed-up");
-      toast.success(`Successfully signed up with ${provider}! Welcome to Flow Space!`);
+            const res = await axiosInstance.post("/auth/signup", userData);
+            dispatch(login(res.data.data));
+            // console.log(res.data.data);
 
-      navigate('/');
+            console.log("You are successfull signed-up");
+            toast.success(`Successfully signed up with ${provider}! Welcome to Flow Space!`);
 
-    } catch (err) {
-      console.error(`${provider} login failed`, err);
-      toast.error(`Failed to sign up with ${provider}. Please try again.`);
-    } finally {
-      setIsAuth0Loading(false);
-    }
-  };
+            navigate('/');
 
+        } catch (err) {
+            console.error(`${provider} login failed`, err);
+            toast.error(`Failed to sign up with ${provider}. Please try again.`);
+        } finally {
+            setIsAuth0Loading(false);
+        }
+    };
 
+    return (
+        <div style={{
+            backgroundImage: "url('/loginSidePanel.webp')",
+            backgroundSize: "cover",
+            backgroundPosition: "right",
+        }} className="min-h-screen flex bg-gray-50">
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Left Section - Company Name and Signup Form */}
-      <div className="w-1/2 flex flex-col items-center justify-center p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-600">Flow Space</h1>
+            {/* Form */}
+            <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-16">
+                <div className="w-full max-w-md space-y-2">
+
+                    {/* Header */}
+                    <div className="text-center mb-10">
+                        <h1 className="text-3xl font-bold text-gray-900">Create account</h1>
+                        <p className="mt-2 text-gray-800 font-medium">
+                            Join Flow Space in less than a minute
+                        </p>
+                    </div>
+
+                    {/* Card */}
+                    <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
+                        <form onSubmit={handleSubmit(signupHandler)} className="space-y-5">
+
+                            {/* Name */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Name
+                                </label>
+                                <input
+                                    {...register("name")}
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    placeholder="Your name"
+                                />
+                            </div>
+
+                            {/* Email */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Email
+                                </label>
+                                <input
+                                    {...register("email")}
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    placeholder="you@example.com"
+                                />
+                            </div>
+
+                            {/* Role */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Role
+                                </label>
+                                <select
+                                    {...register("role")}
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    defaultValue="viewer"
+                                >
+                                    <option value="viewer">Viewer</option>
+                                    <option value="editor">Editor</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+
+                            {/* Password */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Password
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        {...register("password")}
+                                        className="w-full px-4 py-3 pr-10 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                        placeholder="••••••••"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                                    >
+                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Minimum 6 characters
+                                </p>
+                            </div>
+
+                            {/* Confirm Password */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Confirm password
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type={showConfirmPassword ? "text" : "password"}
+                                        {...register("confirmPassword")}
+                                        className="w-full px-4 py-3 pr-10 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                        placeholder="••••••••"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                                    >
+                                        {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Submit */}
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition disabled:opacity-50"
+                            >
+                                {isLoading ? "Creating account..." : "Create account"}
+                            </button>
+                        </form>
+
+                        {/* Divider */}
+                        <div className="flex items-center gap-4">
+                            <span className="flex-grow h-px bg-gray-200" />
+                            <span className="text-sm text-gray-400">OR</span>
+                            <span className="flex-grow h-px bg-gray-200" />
+                        </div>
+
+                        {/* Social */}
+                        <div className="space-y-3">
+                            <button className="w-full border border-gray-200 py-3 rounded-lg flex items-center justify-center gap-3 hover:shadow-sm">
+                                <img src="./googleTrasn.png" className="w-5 h-5" />
+                                Continue with Google
+                            </button>
+                            <button className="w-full bg-gray-900 text-white py-3 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-800">
+                                <Github size={18} />
+                                Continue with GitHub
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Footer */}
+                    <p className="text-center text-md bg-white/20 text-gray-900 mt-6">
+                        Already have an account?{" "}
+                        <Link to="/login" className="font-semibold text-indigo-700">
+                            Log in
+                        </Link>
+                    </p>
+                </div>
+            </div>
+
+            {/* RIGHT */}
+            <div className="hidden lg:flex w-1/2 min-h-screen px-24 pt-24 justify-end items-start">
+                <div className="p-8 rounded-2xl max-w-md text-right space-y-4">
+                    <h2 className="text-4xl font-extrabold text-gray-900 leading-tight">
+                        Start your flow.
+                    </h2>
+                    <p className="text-gray-900 text-lg">
+                        Create an account to write, think, and build in a calm,
+                        distraction-free workspace.
+                    </p>
+                </div>
+            </div>
+
         </div>
-        <div className="max-w-md w-full space-y-8">
-          <p className="text-center text-gray-600">
-            Shaping your ideas into reality.
-          </p>
-          <div className="bg-white p-8 rounded-lg shadow-lg">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-              Sign Up
-            </h2>
-            <form onSubmit={handleSubmit(signupHandler)} className="space-y-4">
-              {/* Name Field */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <User size={20} />
-                  Name
-                </label>
-                <input
-                  type="text"
-                  {...register('name', {
-                    required: 'Name is required',
-                    minLength: {
-                      value: 2,
-                      message: 'Name must be at least 2 characters',
-                    },
-                  })}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter your name"
-                />
-                {errors.name && (
-                  <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-                )}
-              </div>
+    );
 
-              {/* Email Field */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <Mail size={20} />
-                  Email
-                </label>
-                <input
-                  type="email"
-                  {...register('email', {
-                    required: 'Email is required',
-                    pattern: {
-                      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                      message: 'Invalid email address',
-                    },
-                  })}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter your email"
-                />
-                {errors.email && (
-                  <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-                )}
-              </div>
-
-              {/* Role Field */}
-              <div className="mb-4">
-                <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                  <ShieldUser size={20} className="mr-2" />
-                  Role
-                </label>
-                <select
-                  {...register("role", { required: "Role is required" })}
-                  className="w-full p-2 px-5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  defaultValue="viewer"
-                >
-                  <option value="viewer">Viewer</option>
-                  <option value="editor">Editor</option>
-                  <option value="admin">Admin</option>
-                </select>
-                {errors.role && (
-                  <p className="mt-1 text-sm text-red-600">{errors.role.message}</p>
-                )}
-              </div>
-
-              {/* Password Field */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <Lock size={20} />
-                  Password
-                </label>
-                <input
-                  type="password"
-                  {...register('password', {
-                    required: 'Password is required',
-                    minLength: {
-                      value: 6,
-                      message: 'Password must be at least 6 characters',
-                    },
-                  })}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter your password"
-                />
-                {errors.password && (
-                  <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-                )}
-              </div>
-
-              {/* Confirm Password Field */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <Lock size={20} />
-                  Confirm Password
-                </label>
-                <input
-                  type="password"
-                  {...register('confirmPassword', {
-                    required: 'Please confirm your password',
-                    validate: (value) =>
-                      value === watch('password') || 'Passwords do not match',
-                  })}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Confirm your password"
-                />
-                {errors.confirmPassword && (
-                  <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
-                )}
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Creating Account...
-                  </>
-                ) : (
-                  "Sign Up"
-                )}
-              </button>
-
-              {/* Separator */}
-              <div className="flex items-center my-4">
-                <hr className="flex-grow border-gray-300" />
-                <span className="mx-2 text-gray-500 text-sm">OR</span>
-                <hr className="flex-grow border-gray-300" />
-              </div>
-
-              <button
-                type="button"
-                onClick={() => auth0Handler("google-oauth2")}
-                disabled={isAuth0Loading}
-                className="w-full flex items-center justify-center gap-2 bg-[#DB4437] border border-[#DB4437] text-white py-3 px-4 rounded-md hover:bg-[#C33D2E] transition font-medium mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isAuth0Loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <img src="./googleTrasn.png" alt="Google" className="w-5 h-5" />
-                )}
-                {isAuth0Loading ? "Signing up..." : "Sign up with Google"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => auth0Handler("github")}
-                disabled={isAuth0Loading}
-                className="w-full flex items-center justify-center gap-2 bg-[#24292F] border border-[#24292F] text-white py-3 px-4 rounded-md hover:bg-[#3A3F44] transition font-medium mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isAuth0Loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <Github size={20} />
-                )}
-                {isAuth0Loading ? "Signing up..." : "Sign up with GitHub"}
-              </button>
-
-              {/* Alternative Sign Up Link */}
-              <div className="text-center">
-                <p className="text-sm text-gray-600">
-                  Already have an account?{' '}
-                  <Link to="/login" className="font-semibold text-blue-600 hover:underline">
-                    Log in
-                  </Link>
-                </p>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Section - Navigation Links and Image */}
-      <div className="w-1/2 bg-gray-100 flex flex-col items-center p-8">
-
-        <nav className="mb-8 flex space-x-6">
-          <NavLink to="/" className="text-gray-700 hover:text-blue-600 p-2 rounded"
-          >
-            Home
-          </NavLink>
-
-          <NavLink to="/about" className="text-gray-700 hover:text-blue-600 p-2 rounded"
-          >
-            About
-          </NavLink>
-
-          <NavLink to="/blog" className="text-gray-700 hover:text-blue-600 p-2 rounded"
-          >
-            Blog
-          </NavLink>
-
-          <NavLink to="/pricing" className="text-gray-700 hover:text-blue-600 p-2 rounded"
-          >
-            Pricing
-          </NavLink>
-        </nav>
-
-        {/* Icon and Text below links */}
-        <div className="flex flex-col items-center text-center mt-6">
-          <img src="./image2.jpg" alt="company_image"
-            className="object-cover rounded-xl shadow-md mb-4"
-          />
-          <p className="text-lg font-semibold text-gray-900">
-            Building Smarter Projects with Us
-          </p>
-        </div>
-
-      </div>
-
-    </div>
-  );
 }
 
 export default Signup;

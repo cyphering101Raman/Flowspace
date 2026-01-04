@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Github, Loader2 } from 'lucide-react';
+import { Mail, Lock, Github, Loader2, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 import axiosInstance from "../utils/axiosInstace.js"
@@ -12,253 +12,222 @@ import { login } from "../features/authStore.js"
 import { useAuth0 } from '@auth0/auth0-react';
 
 const Login = () => {
-  const { register, handleSubmit, formState: { errors }, reset, setError } = useForm();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isAuth0Loading, setIsAuth0Loading] = useState(false);
+    const { register, handleSubmit, formState: { errors }, reset, setError } = useForm();
+    const [isLoading, setIsLoading] = useState(false);
+    const [isAuth0Loading, setIsAuth0Loading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    
+    const { loginWithPopup, getUser, getIdTokenClaims, isAuthenticated } = useAuth0();
 
-  const { loginWithPopup, getUser, getIdTokenClaims, isAuthenticated } = useAuth0();
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
 
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
+    const loginHandler = async (userData) => {
+        // console.log(userData);
+        setIsLoading(true);
 
-  const loginHandler = async (userData) => {
-    // console.log(userData);
-    setIsLoading(true);
+        try {
+            const res = await axiosInstance.post("/auth/login", userData);
+            const user = res.data;
+            // console.log("user Data from logn: ", user);
 
-    try {
-      const res = await axiosInstance.post("/auth/login", userData);
-      const user = res.data;
-      // console.log("user Data from logn: ", user);
+            dispatch(login(user.data));
+            toast.success("Login successful! Welcome back!");
+            navigate("/");
 
-      dispatch(login(user.data));
-      toast.success("Login successful! Welcome back!");
-      navigate("/");
+        } catch (error) {
+            if (error.response && error.response.data?.message) {
+                const message = error.response.data.message;
 
-    } catch (error) {
-      if (error.response && error.response.data?.message) {
-        const message = error.response.data.message;
-
-        if (message.includes("Email")) {
-          setError("email", { type: "manual", message });
-          toast.error(message);
+                if (message.includes("Email")) {
+                    setError("email", { type: "manual", message });
+                    toast.error(message);
+                }
+                else if (message.includes("Password") || message.includes("Invalid credentials")) {
+                    setError("password", { type: "manual", message });
+                    toast.error(message);
+                }
+            } else {
+                setError("password", {
+                    type: "manual",
+                    message: "Server error. Try again later."
+                });
+                toast.error("Server error. Please try again later.");
+            }
+        } finally {
+            setIsLoading(false);
         }
-        else if (message.includes("Password") || message.includes("Invalid credentials")) {
-          setError("password", { type: "manual", message });
-          toast.error(message);
+    };
+
+    const auth0Handler = async (provider) => {
+        setIsAuth0Loading(true);
+        try {
+            await loginWithPopup({ connection: provider })
+
+            const claims = await getIdTokenClaims();
+            if (!claims) throw new Error("Failed to get user info");
+
+            const userData = {
+                name: claims.name,
+                email: claims.email,
+                role: "viewer",
+            };
+
+            const res = await axiosInstance.post("/auth/signup", userData);
+            dispatch(login(res.data.data));
+            console.log("You are successfull logged-in");
+            toast.success(`Successfully logged in with ${provider}!`);
+
+            navigate('/');
+
+        } catch (err) {
+            console.error(`${provider} login failed`, err);
+            toast.error(`Failed to login with ${provider}. Please try again.`);
+        } finally {
+            setIsAuth0Loading(false);
         }
-      } else {
-        setError("password", {
-          type: "manual",
-          message: "Server error. Try again later."
-        });
-        toast.error("Server error. Please try again later.");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
-  const auth0Handler = async (provider) => {
-    setIsAuth0Loading(true);
-    try {
-      await loginWithPopup({ connection: provider })
+    return (
+        <div style={{
+            backgroundImage: "url('/loginSidePanel.webp')",
+            backgroundSize: "cover",
+            backgroundPosition: "left top",
+        }} className="min-h-screen flex bg-gray-50">
 
-      const claims = await getIdTokenClaims();
-      if (!claims) throw new Error("Failed to get user info");
+            {/* Left Section */}
+            <div className="pt-44 hidden lg:flex w-1/2 min-h-screen px-12 py-10 flex-col items-center text-center bg-cover bg-center relative"
+            >
+                {/* Content */}
+                <div className="relative z-10 space-y-6 max-w-md bg-white/10  p-6 rounded-xl">
 
-      const userData = {
-        name: claims.name,
-        email: claims.email,
-        role: "viewer",
-      };
+                    <h2 className="text-4xl font-extrabold text-gray-900 leading-tight">
+                        A calm space<br />to write & think.
+                    </h2>
+                    <p className="text-gray-800 text-lg">
+                        Capture thoughts, journals, and ideas <br /> in a focused workspace designed
+                        for clarity.
+                    </p>
 
-      const res = await axiosInstance.post("/auth/signup", userData);
-      dispatch(login(res.data.data));
-      console.log("You are successfull logged-in");
-      toast.success(`Successfully logged in with ${provider}!`);
+                </div>
+            </div>
 
-      navigate('/');
+            {/* Right Section */}
+            <div className="mb-10 w-full lg:w-1/2 flex items-start justify-center px-6 pt-20">
+                <div className="w-full max-w-md">
 
-    } catch (err) {
-      console.error(`${provider} login failed`, err);
-      toast.error(`Failed to login with ${provider}. Please try again.`);
-    } finally {
-      setIsAuth0Loading(false);
-    }
-  };
+                    {/* Header */}
+                    <div className="mb-10 text-center">
+                        <h1 className="text-3xl font-bold text-gray-900">
+                            Welcome back
+                        </h1>
+                        <p className="mt-2 text-gray-600">
+                            Log in to continue writing
+                        </p>
+                    </div>
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex">
+                    {/* Form Card */}
+                    <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
 
-      {/* Left Section - Image */}
-      <div className="w-1/2 bg-gray-100 flex flex-col items-center p-8 space-y-6">
+                        <form onSubmit={handleSubmit(loginHandler)} className="space-y-5">
 
-        {/* Navigation Links */}
-        <nav className="flex space-x-6">
-          <NavLink to="/" className="text-gray-700 hover:text-blue-600 p-2 rounded">
-            Home
-          </NavLink>
-          <NavLink to="/about" className="text-gray-700 hover:text-blue-600 p-2 rounded">
-            About
-          </NavLink>
-          <NavLink to="/blog" className="text-gray-700 hover:text-blue-600 p-2 rounded">
-            Blog
-          </NavLink>
-          <NavLink to="/pricing" className="text-gray-700 hover:text-blue-600 p-2 rounded">
-            Pricing
-          </NavLink>
-        </nav>
+                            {/* Email */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Email
+                                </label>
+                                <input
+                                    type="email"
+                                    {...register("email")}
+                                    className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    placeholder="you@example.com"
+                                />
+                                {errors.email && (
+                                    <p className="mt-1 text-sm text-red-500">
+                                        {errors.email.message}
+                                    </p>
+                                )}
+                            </div>
 
-        {/* Image */}
-        <img
-          src="./login.gif"
-          alt="company_image"
-          className="object-cover rounded-xl shadow-md mb-6"
-        />
+                            {/* Password */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Password
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        {...register("password")}
+                                        className="w-full rounded-lg border border-gray-300 px-4 py-3 pr-10 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                        placeholder="••••••••"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                    >
+                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
+                                {errors.password && (
+                                    <p className="mt-1 text-sm text-red-500">
+                                        {errors.password.message}
+                                    </p>
+                                )}
+                            </div>
 
-        {/* Tagline */}
-        <p className="text-lg font-semibold text-gray-900 text-center mb-6">
-          Building Smarter Projects with Us
-        </p>
+                            {/* Submit */}
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition disabled:opacity-50"
+                            >
+                                {isLoading ? "Logging in..." : "Log in"}
+                            </button>
+                        </form>
 
-      </div>
+                        {/* Divider */}
+                        <div className="flex items-center gap-4">
+                            <span className="flex-grow h-px bg-gray-200" />
+                            <span className="text-sm text-gray-400">OR</span>
+                            <span className="flex-grow h-px bg-gray-200" />
+                        </div>
 
+                        {/* Social */}
+                        <div className="space-y-3">
+                            <button
+                                onClick={() => auth0Handler("google-oauth2")}
+                                disabled={isAuth0Loading}
+                                className="w-full flex items-center justify-center gap-3 border border-gray-300 py-3 rounded-lg hover:bg-gray-50 transition"
+                            >
+                                <img src="./googleTrasn.png" className="w-5 h-5" />
+                                Continue with Google
+                            </button>
 
-      {/* Right Section - Login Form */}
-      <div className="w-1/2 flex flex-col items-center justify-center p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-600">Flow Space</h1>
+                            <button
+                                onClick={() => auth0Handler("github")}
+                                disabled={isAuth0Loading}
+                                className="w-full flex items-center justify-center gap-3 bg-gray-900 text-white py-3 rounded-lg hover:bg-gray-800 transition"
+                            >
+                                <Github size={18} />
+                                Continue with GitHub
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Footer Links */}
+                    <div className="mt-6 text-center text-sm text-gray-600">
+                        Don’t have an account?{" "}
+                        <Link to="/signup" className="font-semibold text-indigo-600 hover:underline">
+                            Sign up
+                        </Link>
+                    </div>
+                </div>
+            </div>
+
         </div>
-        <div className="max-w-md w-full space-y-8">
-          <p className="text-center text-gray-600">
-            Shaping your ideas into reality.
-          </p>
-          <div className="bg-white p-8 rounded-lg shadow-lg">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-              Log In
-            </h2>
-            <form onSubmit={handleSubmit(loginHandler)} className="space-y-4">
+    );
 
-              {/* Email Field */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <Mail size={20} />
-                  Email
-                </label>
-                <input
-                  type="email"
-                  {...register('email', {
-                    required: 'Email is required',
-                    pattern: {
-                      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                      message: 'Invalid email address',
-                    },
-                  })}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter your email"
-                />
-                {errors.email && (
-                  <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-                )}
-              </div>
-
-              {/* Password Field */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <Lock size={20} />
-                  Password
-                </label>
-                <input
-                  type="password"
-                  {...register('password', {
-                    required: 'Password is required',
-                    minLength: {
-                      value: 6,
-                      message: 'Password must be at least 6 characters',
-                    },
-                  })}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter your password"
-                />
-                {errors.password && (
-                  <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-                )}
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Logging In...
-                  </>
-                ) : (
-                  "Log In"
-                )}
-              </button>
-
-              {/* Separator */}
-              <div className="flex items-center my-4">
-                <hr className="flex-grow border-gray-300" />
-                <span className="mx-2 text-gray-500 text-sm">OR</span>
-                <hr className="flex-grow border-gray-300" />
-              </div>
-
-              <button
-                type="button"
-                onClick={() => auth0Handler("google-oauth2")}
-                disabled={isAuth0Loading}
-                className="w-full flex items-center justify-center gap-2 bg-[#DB4437] border border-[#DB4437] text-white py-3 px-4 rounded-md hover:bg-[#C33D2E] transition font-medium mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isAuth0Loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <img src="./googleTrasn.png" alt="Google" className="w-5 h-5" />
-                )}
-                {isAuth0Loading ? "Logging in..." : "Log in with Google"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => auth0Handler("github")}
-                disabled={isAuth0Loading}
-                className="w-full flex items-center justify-center gap-2 bg-[#24292F] border border-[#24292F] text-white py-3 px-4 rounded-md hover:bg-[#3A3F44] transition font-medium mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isAuth0Loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <Github size={20} />
-                )}
-                {isAuth0Loading ? "Logging in..." : "Log in with GitHub"}
-              </button>
-
-              {/* Navigation Links */}
-              <div className="text-center mt-4">
-                <p className="text-sm text-gray-600">
-                  Don't have an account?{' '}
-                  <Link to="/signup" className="font-semibold text-blue-600 hover:underline">
-                    Sign up
-                  </Link>
-                </p>
-                <p className="text-sm text-gray-600 mt-2">
-                  Back to{' '}
-                  <Link to="/" className="font-semibold text-blue-600 hover:underline">
-                    Home
-                  </Link>
-                </p>
-              </div>
-
-            </form>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  );
 }
 
 export default Login;
